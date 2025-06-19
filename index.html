@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NEON X MODZ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    @keyframes neonGlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #0f0f0f, #000);
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      backdrop-filter: blur(15px);
+      padding: 30px 40px;
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+      text-align: center;
+      width: 380px;
+    }
+
+    .title {
+      font-size: 32px;
+      margin-bottom: 25px;
+      font-weight: bold;
+      background: linear-gradient(-45deg, #00ffff, #ff00ff, #00ff88, #ff6600);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: neonGlow 5s ease infinite;
+    }
+
+    .prediction {
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .big {
+      color: #00ff88;
+      text-shadow: 0 0 8px #00ff88;
+    }
+
+    .small {
+      color: #ff4d4d;
+      text-shadow: 0 0 8px #ff4d4d;
+    }
+
+    .number-block {
+      font-size: 22px;
+      margin: 10px 0;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 14px;
+      border-radius: 12px;
+      box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.2);
+    }
+
+    .label {
+      font-size: 13px;
+      color: #aaa;
+      margin-top: 18px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    #countdown {
+      margin-top: 22px;
+      font-size: 16px;
+      color: #66ffff;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="title">NEON X MODZ</div>
+
+    <div class="label">Prediction</div>
+    <div id="predictionResult" class="prediction">--</div>
+
+    <div class="label">BIG NUMBER</div>
+    <div id="bigNumber" class="number-block">--</div>
+
+    <div class="label">SMALL NUMBER</div>
+    <div id="smallNumber" class="number-block">--</div>
+
+    <div class="label">Period Number</div>
+    <div id="periodNumber" class="number-block">--</div>
+
+    <div id="countdown">Next prediction in: --s</div>
+  </div>
+
+  <script>
+    function getIST() {
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      return new Date(utc + 5.5 * 3600000);
+    }
+
+    function generatePeriodNumber(time) {
+      const y = time.getFullYear();
+      const m = String(time.getMonth() + 1).padStart(2, '0');
+      const d = String(time.getDate()).padStart(2, '0');
+      const totalMins = time.getHours() * 60 + time.getMinutes();
+
+      if (totalMins < 330 || totalMins > 1430) return null; // 5:30 AM to 11:30 PM IST
+
+      const period = 10001 + (totalMins - 330);
+      return `${y}${m}${d}1000${period}`;
+    }
+
+    function getRandom(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function showPrediction(predictionData) {
+      document.getElementById('predictionResult').textContent = predictionData.prediction;
+      document.getElementById('predictionResult').className = `prediction ${predictionData.prediction.toLowerCase()}`;
+      document.getElementById('bigNumber').textContent = predictionData.bigNumber;
+      document.getElementById('smallNumber').textContent = predictionData.smallNumber;
+      document.getElementById('periodNumber').textContent = predictionData.periodNumber;
+    }
+
+    function showOutOfRange() {
+      document.getElementById('predictionResult').textContent = 'Out of Range';
+      document.getElementById('predictionResult').className = 'prediction';
+      document.getElementById('bigNumber').textContent = '--';
+      document.getElementById('smallNumber').textContent = '--';
+      document.getElementById('periodNumber').textContent = '--';
+    }
+
+    function predict() {
+      const time = getIST();
+      const periodNumber = generatePeriodNumber(time);
+
+      if (!periodNumber) {
+        showOutOfRange();
+        return;
+      }
+
+      const stored = localStorage.getItem('prediction_' + periodNumber);
+
+      if (stored) {
+        const data = JSON.parse(stored);
+        showPrediction(data);
+      } else {
+        const isBig = Math.random() > 0.5;
+        const prediction = isBig ? "Big" : "Small";
+        const bigNumber = getRandom(5, 9);
+        const smallNumber = getRandom(0, 4);
+
+        const predictionData = {
+          prediction,
+          bigNumber,
+          smallNumber,
+          periodNumber
+        };
+
+        localStorage.setItem('prediction_' + periodNumber, JSON.stringify(predictionData));
+        showPrediction(predictionData);
+      }
+    }
+
+    function updateTimer() {
+      const time = getIST();
+      const sec = time.getSeconds();
+      const remaining = 60 - sec;
+      document.getElementById('countdown').textContent = `Next prediction in: ${remaining}s`;
+
+      if (sec === 0) {
+        predict();
+      }
+    }
+
+    window.onload = () => {
+      predict();
+      setInterval(updateTimer, 1000);
+    };
+  </script>
+</body>
+</html>
